@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PINE PRO - DERIV FULL</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">TradingView <span>DERIV FULL • PINE PRO</span></div>
+  <div class="live">● LIVE • DERIV REALTIME • TANPA KEY • 24/7</div>
+  <select id="symbol" onchange="App.changeSymbol(this.value)" style="min-width:210px">
+    <optgroup label="💱 FOREX MAJOR - Deriv">
+      <option value="EURUSD">EUR / USD</option><option value="GBPUSD">GBP / USD</option><option value="USDJPY">USD / JPY</option><option value="AUDUSD">AUD / USD</option><option value="USDCAD">USD / CAD</option><option value="USDCHF">USD / CHF</option><option value="NZDUSD">NZD / USD</option>
+    </optgroup>
+    <optgroup label="💱 FOREX MINOR - Deriv">
+      <option value="EURGBP">EUR / GBP</option><option value="EURJPY">EUR / JPY</option><option value="EURCHF">EUR / CHF</option><option value="EURCAD">EUR / CAD</option><option value="EURAUD">EUR / AUD</option><option value="EURNZD">EUR / NZD</option><option value="GBPJPY">GBP / JPY</option><option value="GBPCHF">GBP / CHF</option><option value="GBPCAD">GBP / CAD</option><option value="GBPAUD">GBP / AUD</option><option value="GBPNZD">GBP / NZD</option><option value="AUDJPY">AUD / JPY</option><option value="AUDCHF">AUD / CHF</option><option value="AUDCAD">AUD / CAD</option><option value="AUDNZD">AUD / NZD</option><option value="CADJPY">CAD / JPY</option><option value="CADCHF">CAD / CHF</option><option value="CHFJPY">CHF / JPY</option><option value="NZDJPY">NZD / JPY</option><option value="NZDCHF">NZD / CHF</option><option value="NZDCAD">NZD / CAD</option>
+    </optgroup>
+    <optgroup label="💱 FOREX EXOTIC - Deriv">
+      <option value="USDMXN">USD / MXN</option><option value="USDZAR">USD / ZAR</option><option value="USDTRY">USD / TRY</option><option value="USDTHB">USD / THB</option><option value="USDSGD">USD / SGD</option><option value="USDHKD">USD / HKD</option><option value="USDNOK">USD / NOK</option><option value="USDSEK">USD / SEK</option><option value="USDDKK">USD / DKK</option><option value="USDPLN">USD / PLN</option><option value="USDHUF">USD / HUF</option><option value="USDCZK">USD / CZK</option><option value="EURTRY">EUR / TRY</option><option value="EURZAR">EUR / ZAR</option><option value="EURMXN">EUR / MXN</option><option value="GBPTRY">GBP / TRY</option>
+    </optgroup>
+    <optgroup label="🥇 COMMODITIES - Deriv">
+      <option value="XAUUSD">XAU / USD - EMAS</option><option value="XAGUSD">XAG / USD - PERAK</option><option value="XPTUSD">XPT / USD - PLATINUM</option><option value="XPDUSD">XPD / USD - PALLADIUM</option><option value="USOIL">US OIL - WTI</option><option value="UKOIL">UK OIL - BRENT</option><option value="NGAS">NATURAL GAS</option>
+    </optgroup>
+    <optgroup label="🪙 CRYPTO - Deriv">
+      <option value="BTCUSD">BTC / USD</option><option value="ETHUSD">ETH / USD</option><option value="LTCUSD">LTC / USD</option><option value="BCHUSD">BCH / USD</option><option value="XRPUSD">XRP / USD</option><option value="ADAUSD">ADA / USD</option><option value="SOLUSD">SOL / USD</option><option value="DOTUSD">DOT / USD</option><option value="DOGEUSD">DOGE / USD</option><option value="AVAXUSD">AVAX / USD</option><option value="LINKUSD">LINK / USD</option><option value="MATICUSD">MATIC / USD</option><option value="UNIUSD">UNI / USD</option><option value="ATOMUSD">ATOM / USD</option><option value="NEARUSD">NEAR / USD</option><option value="ALGOUSD">ALGO / USD</option>
+    </optgroup>
+    <optgroup label="📈 INDEX - Deriv">
+      <option value="US30">US30 - Dow Jones</option><option value="US100">US100 - Nasdaq 100</option><option value="US500">US500 - S&P 500</option><option value="UK100">UK100 - FTSE 100</option><option value="GER40">GER40 - DAX</option><option value="FRA40">FRA40 - CAC 40</option><option value="EU50">EU50 - Euro Stoxx</option><option value="JPN225">JPN225 - Nikkei</option><option value="AUS200">AUS200 - ASX 200</option><option value="HKG50">HKG50 - Hang Seng</option>
+    </optgroup>
+    <optgroup label="🎲 SYNTHETIC - Volatility Index (24/7)">
+      <option value="V10">Volatility 10 Index</option><option value="V25">Volatility 25 Index</option><option value="V50">Volatility 50 Index</option><option value="V75">Volatility 75 Index</option><option value="V100">Volatility 100 Index</option><option value="V150">Volatility 150 Index</option><option value="V200">Volatility 200 Index</option><option value="V250">Volatility 250 Index</option>
+    </optgroup>
+    <optgroup label="🎲 SYNTHETIC - Boom & Crash (24/7)">
+      <option value="BOOM1000">Boom 1000 Index</option><option value="BOOM500">Boom 500 Index</option><option value="BOOM300">Boom 300 Index</option><option value="CRASH1000">Crash 1000 Index</option><option value="CRASH500">Crash 500 Index</option><option value="CRASH300">Crash 300 Index</option>
+    </optgroup>
+    <optgroup label="🎲 SYNTHETIC - Lainnya (24/7)">
+      <option value="STEP">Step Index</option><option value="JUMP10">Jump 10 Index</option><option value="JUMP25">Jump 25 Index</option><option value="JUMP50">Jump 50 Index</option><option value="JUMP75">Jump 75 Index</option><option value="JUMP100">Jump 100 Index</option><option value="RANGE100">Range Break 100 Index</option><option value="RANGE200">Range Break 200 Index</option>
+    </optgroup>
+  </select>
+  <span id="dataSource" style="font-size:11px;color:#26a69a;background:rgba(38,166,154,.15);padding:4px 8px;border-radius:20px">Deriv • FREE REALTIME</span>
+  <span id="tickInfo" style="font-size:11px;color:#f0b90b;background:rgba(240,185,11,.15);padding:4px 8px;border-radius:20px">⚡ Live</span>
+  <div class="tf-group">
+    <button class="tf active" onclick="App.setTF('1m',this)">1m</button><button class="tf" onclick="App.setTF('5m',this)">5m</button><button class="tf" onclick="App.setTF('15m',this)">15m</button><button class="tf" onclick="App.setTF('1h',this)">1h</button><button class="tf" onclick="App.setTF('4h',this)">4h</button><button class="tf" onclick="App.setTF('1d',this)">1D</button>
+  </div>
+  <button class="pine-btn" onclick="App.togglePine()">⚡ Pine Editor</button>
+  <button onclick="App.fixCandle()" style="background:#26a69a;border:none;font-weight:800">🔧 Fix Candle</button>
+  <div style="display:flex;gap:4px;background:#1e222d;border:1px solid #2a2e39;border-radius:6px;padding:2px">
+    <button onclick="App.zoomIn()" style="border:none;background:transparent;font-size:16px;font-weight:800">➕</button>
+    <button onclick="App.zoomOut()" style="border:none;background:transparent;font-size:16px;font-weight:800">➖</button>
+    <button onclick="App.zoomReset()" style="border:none;background:transparent;font-size:14px">↩️</button>
+    <button onclick="App.zoomToLast(50)" style="border:none;background:transparent;font-size:11px;font-weight:700">50</button>
+    <button onclick="App.zoomToLast(100)" style="border:none;background:transparent;font-size:11px;font-weight:700">100</button>
+  </div>
+  <div style="margin-left:auto;text-align:right"><div class="price" id="topPrice">-</div><div id="topChg">-</div></div>
+</div>
+<div class="main">
+  <div class="toolbar">
+    <button class="tool active" data-tool="cross" onclick="Drawing.setTool('cross')">✛</button>
+    <button class="tool" data-tool="trendline" onclick="Drawing.setTool('trendline')">📐</button>
+    <button class="tool" data-tool="hline" onclick="Drawing.setTool('hline')">➖</button>
+    <button class="tool" data-tool="fibo" onclick="Drawing.setTool('fibo')">〰️</button>
+    <button class="tool" data-tool="rect" onclick="Drawing.setTool('rect')">⬜</button>
+    <button class="tool" data-tool="text" onclick="Drawing.setTool('text')">T</button>
+    <button class="tool" onclick="Drawing.removeLast()">↩️</button>
+    <button class="tool" onclick="Drawing.clearAll()" style="color:#ef5350">🗑️</button>
+    <div style="font-size:10px;text-align:center;color:#787b86" id="drawingCount">0 gambar</div>
+    <div style="font-size:10px;text-align:center;color:#f0b90b;padding:0 2px" id="drawingHint">Cross - Geser Chart</div>
+    <div id="drawingPreview" style="font-size:10px;text-align:center;color:#26a69a;padding:2px"></div>
+  </div>
+  <div class="chart-wrap">
+    <div id="chart"></div>
+    <div id="panePine"></div>
+    <div id="pineEditor" class="pine-editor hidden">
+      <div class="pine-header"><span>⚡ Pine Editor + Folder</span><div style="display:flex;gap:6px"><button onclick="App.formatPine()">✨ Rapihin</button><button onclick="App.togglePine()">X</button></div></div>
+      <div class="pine-tabs">
+        <button class="active" onclick="App.showTab('editor',this)">Editor</button>
+        <button onclick="App.showTab('folder',this)">📁 Folder (<span id="pineFolderCount">0</span>)</button>
+        <button onclick="App.showTab('console',this)">Console</button>
+        <button onclick="App.showTab('vars',this)">Variables</button>
+      </div>
+      <div style="display:flex;gap:6px;padding:8px;background:#131722">
+        <input id="pineScriptName" placeholder="Nama script, misal: SMA Gue" style="flex:1;background:#1e222d;color:#fff;border:1px solid #2a2e39;padding:8px;border-radius:6px">
+        <button onclick="PineStorage.save(document.getElementById('pineScriptName').value||('Script '+Date.now()), document.getElementById('pineCode').value); App.log('💾 Disimpen ke folder!')" style="background:#26a69a;border:none;padding:8px 12px;border-radius:6px;font-weight:800;color:#fff">💾 Simpan</button>
+      </div>
+      <textarea id="pineCode" spellcheck="false"></textarea>
+      <div id="pineFolder" class="pine-console hidden">
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <button onclick="PineStorage.exportAll()" style="background:#2962ff;color:#fff;border:none;padding:8px;border-radius:6px;flex:1">💾 Export Semua</button>
+          <label style="background:#f0b90b;color:#000;padding:8px;border-radius:6px;flex:1;text-align:center;cursor:pointer">📥 Import <input type="file" accept=".json" style="display:none" onchange="PineStorage.importFile(this.files[0])"></label>
+        </div>
+        <div id="pineFolderList"></div>
+        <div style="font-size:11px;color:#787b86;margin-top:10px">💡 Folder kesimpen di browser lu.</div>
+      </div>
+      <div id="pineConsole" class="pine-console hidden"></div>
+      <div id="pineVars" class="pine-console hidden"></div>
+      <div class="pine-actions">
+        <button class="run" onclick="App.addPine(); PineStorage.autoSave(document.getElementById('pineCode').value)" style="flex:2">➕ Tambah Indikator • F5</button>
+        <button class="example" onclick="App.loadExample()">📋 Contoh</button>
+        <button class="clear" onclick="App.clearPine()">🗑️ Hapus Semua</button>
+      </div>
+      <div id="pineError"></div>
+      <div class="pine-status">Status: <b id="pineStatus">Siap</b></div>
+    </div>
+    <div class="bottom"><span>O: <b id="oV">-</b></span><span>H: <b id="hV">-</b></span><span>L: <b id="lV">-</b></span><span>C: <b id="cV">-</b></span><span>Candle: <b id="candleStatus" style="color:#26a69a">OK</b></span><span>Pine: <b id="pineActive">-</b></span><span>Bar: <b id="barCount">0</b></span></div>
+  </div>
+  <div class="right">
+    <b>📚 Indikator Bawaan</b>
+    <input id="searchInd" placeholder="🔍 Cari indikator, misal: RSI, MACD..." oninput="App.filterIndicators(this.value)" style="width:100%;background:#1e222d;color:#fff;border:1px solid #2a2e39;padding:9px;border-radius:6px;margin-top:8px">
+    <div id="indicatorsLibrary" style="margin-top:10px;max-height:320px;overflow-y:auto"></div>
+    <div style="margin-top:14px"><b>Indikator Aktif</b><div id="myIndicators" class="pine-list"></div></div>
+    <div style="margin-top:12px"><b>✏️ Gambar Aktif</b><div id="drawingList" class="pine-list"></div></div>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+<div id="settingsPanel" class="settings-panel hidden">
+  <div class="settings-header"><div><div id="settingsTitle" style="font-weight:800;font-size:14px">⚙️ Settings</div><div id="settingsDesc" style="font-size:11px;color:#787b86">Overlay di chart</div></div><button onclick="PineSettings.close()" style="background:#fff;color:#2962ff;border:none;padding:6px 12px;border-radius:6px;font-weight:800">X Tutup</button></div>
+  <div id="settingsBody" style="padding:12px;overflow-y:auto;max-height:60vh"></div>
+  <div style="padding:12px;border-top:1px solid #2a2e39;display:flex;gap:8px"><button onclick="PineSettings.apply(); PineSettings.close()" style="flex:2;background:#26a69a;color:#fff;border:none;padding:11px;border-radius:6px;font-weight:800">✅ Terapkan</button><button onclick="PineSettings.choosePine()" style="flex:1;background:#2962ff;color:#fff;border:none;padding:11px;border-radius:6px;font-weight:700">⚡ Edit di Pine</button></div>
+  <div style="padding:0 12px 12px;font-size:11px;color:#787b86;text-align:center">💡 Geser slider = langsung ke-apply live</div>
+</div>
+<script src="pine-stdlib.js"></script>
+<script src="pine-engine.js"></script>
+<script src="indicators-library.js"></script>
+<script src="drawing.js"></script>
+<script src="pine-storage.js"></script>
+<script src="pine-settings.js"></script>
+<script src="examples.js"></script>
+<script src="chart.js"></script>
+</body>
+</html>
