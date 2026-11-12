@@ -1,18 +1,28 @@
-// chart.js - DERIV + HTTPS FALLBACK - FIREFOX FRIENDLY - TANPA WS
+// chart.js - DERIV ONLY - WS ONLY - NO FETCH - NO FRANKFURTER - GITHUB PAGES READY
+// Cara kerja: Cuma pake WebSocket Deriv, gak pake fetch sama sekali, jadi gak kena CORS
 const DERIV_MAP = {
+  // FOREX MAJOR
   'EURUSD':'frxEURUSD','GBPUSD':'frxGBPUSD','USDJPY':'frxUSDJPY','AUDUSD':'frxAUDUSD','USDCAD':'frxUSDCAD','USDCHF':'frxUSDCHF','NZDUSD':'frxNZDUSD',
+  // FOREX MINOR
   'EURGBP':'frxEURGBP','EURJPY':'frxEURJPY','EURCHF':'frxEURCHF','EURCAD':'frxEURCAD','EURAUD':'frxEURAUD','EURNZD':'frxEURNZD','GBPJPY':'frxGBPJPY','GBPCHF':'frxGBPCHF','GBPCAD':'frxGBPCAD','GBPAUD':'frxGBPAUD','GBPNZD':'frxGBPNZD','AUDJPY':'frxAUDJPY','AUDCHF':'frxAUDCHF','AUDCAD':'frxAUDCAD','AUDNZD':'frxAUDNZD','CADJPY':'frxCADJPY','CADCHF':'frxCADCHF','CHFJPY':'frxCHFJPY','NZDJPY':'frxNZDJPY','NZDCHF':'frxNZDCHF','NZDCAD':'frxNZDCAD',
+  // FOREX EXOTIC
   'USDMXN':'frxUSDMXN','USDZAR':'frxUSDZAR','USDTRY':'frxUSDTRY','USDTHB':'frxUSDTHB','USDSGD':'frxUSDSGD','USDHKD':'frxUSDHKD','USDNOK':'frxUSDNOK','USDSEK':'frxUSDSEK','USDDKK':'frxUSDDKK','USDPLN':'frxUSDPLN','USDHUF':'frxUSDHUF','USDCZK':'frxUSDCZK','EURTRY':'frxEURTRY','EURZAR':'frxEURZAR','EURMXN':'frxEURMXN','GBPTRY':'frxGBPTRY',
+  // COMMODITIES
   'XAUUSD':'frxXAUUSD','XAGUSD':'frxXAGUSD','XPTUSD':'frxXPTUSD','XPDUSD':'frxXPDUSD','USOIL':'frxUSOIL','UKOIL':'frxUKOIL','NGAS':'frxNGAS',
+  // CRYPTO
   'BTCUSD':'cryBTCUSD','ETHUSD':'cryETHUSD','LTCUSD':'cryLTCUSD','BCHUSD':'cryBCHUSD','XRPUSD':'cryXRPUSD','ADAUSD':'cryADAUSD','SOLUSD':'crySOLUSD','DOTUSD':'cryDOTUSD','DOGEUSD':'cryDOGEUSD','AVAXUSD':'cryAVAXUSD','LINKUSD':'cryLINKUSD','MATICUSD':'cryMATICUSD','UNIUSD':'cryUNIUSD','ATOMUSD':'cryATOMUSD','NEARUSD':'cryNEARUSD','ALGOUSD':'cryALGOUSD',
+  // INDEX
   'US30':'frxUS30','US100':'frxUS100','US500':'frxUS500','UK100':'frxUK100','GER40':'frxGER40','FRA40':'frxFRA40','EU50':'frxEU50','JPN225':'frxJPN225','AUS200':'frxAUS200','HKG50':'frxHKG50',
+  // SYNTHETIC - Volatility
   'V10':'R_10','V25':'R_25','V50':'R_50','V75':'R_75','V100':'R_100','V150':'R_150','V200':'R_200','V250':'R_250',
+  // SYNTHETIC - Boom & Crash
   'BOOM1000':'BOOM1000','BOOM500':'BOOM500','BOOM300':'BOOM300','CRASH1000':'CRASH1000','CRASH500':'CRASH500','CRASH300':'CRASH300',
+  // SYNTHETIC - Lainnya
   'STEP':'stpRNG','JUMP10':'JD10','JUMP25':'JD25','JUMP50':'JD50','JUMP75':'JD75','JUMP100':'JD100','RANGE100':'RB100','RANGE200':'RB200',
 };
 
 const App={
-  symbol:'EURUSD', interval:'1m', allData:[], chart:null, candleSeries:null, pineChart:null, activePines:[], nextId:1, _autoTimer:null, _derivWs:null, _pollTimer:null, _useWS:true,
+  symbol:'EURUSD', interval:'1m', allData:[], chart:null, candleSeries:null, pineChart:null, activePines:[], nextId:1, _autoTimer:null, _derivWs:null,
   init(){
     this.chart=LightweightCharts.createChart(document.getElementById('chart'),{layout:{background:{color:'#131722'},textColor:'#d1d4dc',fontFamily:"'Trebuchet MS',Roboto,sans-serif"},grid:{vertLines:{color:'rgba(42,46,57,0.5)'},horzLines:{color:'rgba(42,46,57,0.5)'}},rightPriceScale:{borderColor:'#2a2e39'},timeScale:{borderColor:'#2a2e39',timeVisible:true}});
     this.candleSeries=this.chart.addCandlestickSeries({upColor:'#26a69a',downColor:'#ef5350',wickUpColor:'#26a69a',wickDownColor:'#ef5350',borderVisible:false,priceLineVisible:true});
@@ -23,14 +33,6 @@ const App={
     this.renderActiveList(); renderIndicatorsLibrary(); PineStorage.render();
     let autosave=PineStorage.loadAutoSave(); if(autosave) document.getElementById('pineCode').value=autosave;
     Drawing.init(this.chart, this.candleSeries, ()=>this.allData);
-    // DETEKSI FIREFOX - Kalo Firefox, langsung pake HTTPS, jangan WS
-    let isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-    console.log('[App] Browser:', isFirefox ? 'Firefox - Pake HTTPS' : 'Chrome/Edge - Pake WS');
-    if(isFirefox){
-      this._useWS = false;
-      this.log('🦊 Firefox ke-detek, pake mode HTTPS (tanpa WS) biar gak error');
-      document.getElementById('candleStatus').textContent = 'Firefox Mode - HTTPS';
-    }
     this.loadReal();
     document.addEventListener('keydown',e=>{ if(e.key==='F5'){ e.preventDefault(); this.addPine(); } });
     document.addEventListener('keydown', e=>{ if(e.target.tagName==='TEXTAREA' || e.target.tagName==='INPUT') return; if(e.key==='+' || e.key==='='){ e.preventDefault(); this.zoomIn(); } if(e.key==='-' || e.key==='_'){ e.preventDefault(); this.zoomOut(); } if(e.key==='0'){ e.preventDefault(); this.zoomReset(); } });
@@ -38,31 +40,30 @@ const App={
   },
   getDerivSymbol(symbol){ return DERIV_MAP[symbol] || 'frx'+symbol; },
 
+  // ===== DERIV WS ONLY - GAK PAKE FETCH, GAK KENA CORS =====
   async loadReal(){
     if(this._derivWs){ try{ this._derivWs.close(); }catch(e){} this._derivWs=null; }
-    if(this._pollTimer){ clearInterval(this._pollTimer); this._pollTimer=null; }
     if(this._autoTimer){ clearTimeout(this._autoTimer); }
     let derivSymbol=this.getDerivSymbol(this.symbol);
     let sourceEl=document.getElementById('dataSource'); if(sourceEl) sourceEl.textContent='Deriv • '+this.symbol+' • '+derivSymbol;
-    document.getElementById('candleStatus').textContent='Loading... '+this.symbol+' ('+derivSymbol+')';
+    document.getElementById('candleStatus').textContent='Connecting Deriv... '+this.symbol+' ('+derivSymbol+')';
     document.getElementById('topPrice').textContent='Loading...';
     this.allData=[]; try{ this.candleSeries.setData([]); }catch(e){}
     let granularity=this.interval==='1m'?60:this.interval==='5m'?300:this.interval==='15m'?900:this.interval==='1h'?3600:this.interval==='4h'?14400:86400;
-    console.log('[Deriv] Load:', this.symbol, '->', derivSymbol, 'mode:', this._useWS ? 'WS' : 'HTTPS');
-    if(this._useWS){
-      // CHROME / EDGE - Pake WS (realtime detik-an)
-      this.tryDerivEndpoint(['wss://ws.derivws.com/websockets/v3?app_id=1089','wss://ws.binaryws.com/websockets/v3?app_id=1089','wss://ws.deriv.com/websockets/v3?app_id=1089'], 0, derivSymbol, granularity);
-    } else {
-      // FIREFOX - Pake HTTPS, gak pake WS sama sekali
-      await this.loadHttpsMode(derivSymbol, granularity);
-    }
+    console.log('[Deriv] Load:', this.symbol, '->', derivSymbol, 'granularity', granularity);
+    // 3 ENDPOINT, COBA SATU-SATU SAMPE ADA YANG JALAN
+    let endpoints = [
+      'wss://ws.derivws.com/websockets/v3?app_id=1089',
+      'wss://ws.binaryws.com/websockets/v3?app_id=1089',
+      'wss://ws.deriv.com/websockets/v3?app_id=1089',
+    ];
+    this.tryDerivEndpoint(endpoints, 0, derivSymbol, granularity);
   },
 
   tryDerivEndpoint(endpoints, idx, derivSymbol, granularity){
     if(idx >= endpoints.length){
-      console.log('[Deriv] Semua WS gagal, pindah ke HTTPS mode');
-      this._useWS = false;
-      this.loadHttpsMode(derivSymbol, granularity);
+      document.getElementById('candleStatus').textContent='Semua WS Deriv gagal - Coba ganti ke Data HP / VPN, terus Refresh';
+      this.log('❌ Semua WS Deriv gagal. Coba: 1) Refresh 2) Ganti WiFi ke Data HP 3) Pake VPN 4) Buka di Chrome');
       return;
     }
     let url = endpoints[idx];
@@ -73,23 +74,25 @@ const App={
     let connected = false;
     let timeoutId = setTimeout(()=>{
       if(!connected){
-        console.log('[Deriv] Timeout endpoint', idx+1);
+        console.log('[Deriv] Timeout endpoint', idx+1, ', coba endpoint berikutnya');
         try{ this._derivWs.close(); }catch(e){}
         this.tryDerivEndpoint(endpoints, idx+1, derivSymbol, granularity);
       }
     }, 5000);
     this._derivWs.onopen=()=>{
-      connected = true; clearTimeout(timeoutId);
-      console.log('[Deriv] ✅ WS Open via endpoint', idx+1);
+      connected = true;
+      clearTimeout(timeoutId);
+      console.log('[Deriv] ✅ WS Open via endpoint', idx+1, ':', url);
       document.getElementById('candleStatus').textContent='Connected Deriv • '+this.symbol;
       this._derivWs.send(JSON.stringify({ ticks_history: derivSymbol, end:'latest', count:300, style:'candles', granularity: granularity, subscribe:1 }));
     };
     this._derivWs.onmessage=(e)=>{
       let data=JSON.parse(e.data);
       if(data.msg_type==='candles'){
+        console.log('[Deriv] History:', data.candles.length, 'candle buat', this.symbol);
         this.allData=data.candles.map(c=>({ time:c.epoch, open:parseFloat(c.open), high:parseFloat(c.high), low:parseFloat(c.low), close:parseFloat(c.close), volume:0 }));
         this.afterLoadData('Deriv WS REALTIME • '+this.symbol);
-        let tickEl=document.getElementById('tickInfo'); if(tickEl) tickEl.textContent='⚡ Deriv WS Live • '+this.symbol;
+        let tickEl=document.getElementById('tickInfo'); if(tickEl) tickEl.textContent='⚡ Deriv WS Live • '+this.symbol+' • Tick Realtime';
       }
       if(data.msg_type==='ohlc'){
         let ohlc=data.ohlc; if(!ohlc) return;
@@ -102,197 +105,28 @@ const App={
       }
       if(data.error){
         console.log('[Deriv] Error:', data.error);
+        // Kalo simbol crypto salah format, coba format alternatif
         if(data.error.code==='InvalidSymbol' || (data.error.message && data.error.message.includes('Invalid'))){
+          document.getElementById('candleStatus').textContent='Simbol '+this.symbol+' gak ketemu, coba alt...';
           let alt = derivSymbol.startsWith('cry') ? 'frx'+this.symbol : derivSymbol.startsWith('frx') ? 'cry'+this.symbol : derivSymbol;
+          console.log('[Deriv] Coba alt symbol:', alt);
           try{ this._derivWs.send(JSON.stringify({ ticks_history: alt, end:'latest', count:300, style:'candles', granularity: granularity, subscribe:1 })); }catch(err){}
+        } else {
+          document.getElementById('candleStatus').textContent='Deriv Error: '+data.error.message;
+          this.log('❌ Deriv error '+this.symbol+': '+data.error.message);
         }
       }
     };
     this._derivWs.onerror=(e)=>{
       console.log('[Deriv] WS Error endpoint', idx+1);
       clearTimeout(timeoutId);
-      if(!connected) this.tryDerivEndpoint(endpoints, idx+1, derivSymbol, granularity);
+      if(!connected){
+        this.tryDerivEndpoint(endpoints, idx+1, derivSymbol, granularity);
+      }
     };
-    this._derivWs.onclose=()=>{ console.log('[Deriv] WS Closed endpoint', idx+1); };
-  },
-
-  // ===== HTTPS MODE - BUAT FIREFOX, GAK PAKE WS SAMA SEKALI =====
-  // Pake 3 API HTTPS yang dijamin jalan di Firefox:
-  // 1. Frankfurter (ECB) buat history Forex - HTTPS, gratis, gak ke-block
-  // 2. Exchangerate.host buat harga live Forex / XAU - HTTPS
-  // 3. Binance buat history Crypto - HTTPS (kalo simbol crypto)
-  // 4. Synthetic (V75, Boom, Crash) - pake Deriv via HTTP proxy, karena cuma Deriv yang punya
-  async loadHttpsMode(derivSymbol, granularity){
-    try{
-      document.getElementById('candleStatus').textContent='Firefox HTTPS Mode - Loading '+this.symbol+'...';
-      // Kalo Synthetic (V75, Boom, Crash, dll) - cuma ada di Deriv, kita coba WS sekali lagi pake cara Firefox-friendly
-      // Atau pake proxy HTTP buat Deriv
-      if(derivSymbol.startsWith('R_') || derivSymbol.startsWith('BOOM') || derivSymbol.startsWith('CRASH') || derivSymbol.startsWith('JD') || derivSymbol.startsWith('RB') || derivSymbol.startsWith('stp')){
-        await this.loadSyntheticHttps(derivSymbol, granularity);
-        return;
-      }
-      // Kalo Crypto - pake Binance HTTPS (paling stabil di Firefox)
-      if(this.symbol.endsWith('USD') && ['BTCUSD','ETHUSD','LTCUSD','BCHUSD','XRPUSD','ADAUSD','SOLUSD','DOTUSD','DOGEUSD','AVAXUSD','LINKUSD','MATICUSD','UNIUSD','ATOMUSD','NEARUSD','ALGOUSD'].includes(this.symbol)){
-        await this.loadBinanceHttps();
-        return;
-      }
-      // Kalo Forex / XAU / Oil / Index - pake Frankfurter + Exchangerate HTTPS
-      await this.loadForexHttps();
-    }catch(e){
-      console.log('[HTTPS] Gagal:', e);
-      document.getElementById('candleStatus').textContent='HTTPS gagal juga: '+e.message;
-      this.log('❌ HTTPS gagal: '+e.message);
-    }
-  },
-
-  async loadBinanceHttps(){
-    try{
-      // BTCUSD di Deriv = BTCUSDT di Binance, harga hampir sama
-      let binSymbol = this.symbol.replace('USD','USDT');
-      if(this.symbol==='BTCUSD') binSymbol='BTCUSDT';
-      console.log('[HTTPS] Binance:', binSymbol);
-      let res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${binSymbol}&interval=${this.interval}&limit=300`);
-      let raw = await res.json();
-      if(!Array.isArray(raw)) throw new Error('Binance kosong');
-      this.allData = raw.map(k=>({time:k[0]/1000, open:parseFloat(k[1]), high:parseFloat(k[2]), low:parseFloat(k[3]), close:parseFloat(k[4]), volume:parseFloat(k[5])}));
-      this.afterLoadData('Binance HTTPS (Firefox) • '+this.symbol);
-      // Polling tiap 3 detik via HTTPS
-      this._pollTimer = setInterval(async()=>{
-        try{
-          let r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${binSymbol}&interval=${this.interval}&limit=2`);
-          let d = await r.json();
-          if(!Array.isArray(d) || !d.length) return;
-          let k = d[d.length-1];
-          let c = {time:k[0]/1000, open:parseFloat(k[1]), high:parseFloat(k[2]), low:parseFloat(k[3]), close:parseFloat(k[4]), volume:parseFloat(k[5])};
-          let last = this.allData[this.allData.length-1];
-          if(last && last.time===c.time) this.allData[this.allData.length-1]=c; else this.allData.push(c);
-          this.candleSeries.update(c); this.updateTop(c);
-        }catch(e){}
-      }, 3000);
-    }catch(e){
-      console.log('[HTTPS] Binance gagal:', e);
-      await this.loadForexHttps();
-    }
-  },
-
-  async loadForexHttps(){
-    try{
-      // 1. Ambil history dari Frankfurter (ECB) - HTTPS, jalan di Firefox
-      let from = this.symbol.slice(0,3);
-      let to = this.symbol.slice(3,6);
-      if(this.symbol==='XAUUSD'){ from='XAU'; to='USD'; }
-      if(this.symbol==='XAGUSD'){ from='XAG'; to='USD'; }
-      console.log('[HTTPS] Forex:', from, to);
-      let endDate = new Date().toISOString().split('T')[0];
-      let startDate = new Date(Date.now() - 90*24*60*60*1000).toISOString().split('T')[0];
-      let frankUrl = `https://api.frankfurter.app/${startDate}..${endDate}?from=EUR&to=USD,${from === 'EUR' ? 'USD' : from}`;
-      let res = await fetch(frankUrl);
-      let data = await res.json();
-      if(data.rates){
-        let dates = Object.keys(data.rates).sort();
-        this.allData = [];
-        let prevClose = null;
-        for(let d of dates){
-          let rates = data.rates[d];
-          let price = null;
-          if(from==='EUR' && to==='USD') price = rates['USD'];
-          else if(from==='EUR') price = rates[to];
-          else if(to==='EUR') price = 1 / rates[from];
-          else if(rates['USD'] && rates[from]) price = rates['USD'] / rates[from];
-          else if(rates[to]) price = rates[to];
-          if(price==null) continue;
-          let t = Math.floor(new Date(d+'T00:00:00Z').getTime()/1000);
-          let open = prevClose || price;
-          this.allData.push({time:t, open, high:Math.max(open,price)*1.0005, low:Math.min(open,price)*0.9995, close:price, volume:1000});
-          prevClose = price;
-        }
-        // Pecah harian jadi intraday biar chart 1m gak kosong
-        if(this.interval!=='1d' && this.allData.length>0){
-          this.allData = this.splitDailyToIntraday(this.allData, this.interval);
-        }
-      }
-      // 2. Kalo Frankfurter gagal / XAU (gak ada di Frankfurter), pake harga live dari exchangerate.host
-      if(!this.allData.length || this.symbol==='XAUUSD' || this.symbol==='XAGUSD'){
-        let livePrice = null;
-        try{
-          let r2 = await fetch(`https://api.exchangerate.host/convert?from=${from}&to=${to}`);
-          let d2 = await r2.json();
-          livePrice = d2.result || d2.info?.rate;
-        }catch(e){}
-        if(!livePrice){
-          let r3 = await fetch(`https://open.er-api.com/v6/latest/${from}`);
-          let d3 = await r3.json();
-          livePrice = d3.rates?.[to];
-        }
-        if(livePrice && !this.allData.length){
-          let now = Math.floor(Date.now()/1000);
-          let intervalSec = this.interval==='1m'?60:this.interval==='5m'?300:this.interval==='15m'?900:this.interval==='1h'?3600:this.interval==='4h'?14400:86400;
-          this.allData = [];
-          let cur = livePrice * 0.995;
-          for(let i=200;i>0;i--){
-            let t = now - i*intervalSec;
-            let open = cur;
-            let close = open + (Math.random()-0.5)*livePrice*0.0008;
-            this.allData.push({time:t, open, high:Math.max(open,close)*1.0003, low:Math.min(open,close)*0.9997, close, volume:100});
-            cur = close;
-          }
-          let last = this.allData[this.allData.length-1];
-          last.close = livePrice; last.high = Math.max(last.high, livePrice); last.low = Math.min(last.low, livePrice);
-        }
-        if(livePrice && this.allData.length){
-          // Update candle terakhir ke harga live
-          let last = this.allData[this.allData.length-1];
-          last.close = livePrice; last.high = Math.max(last.high, livePrice); last.low = Math.min(last.low, livePrice);
-        }
-      }
-      if(!this.allData.length) throw new Error('Forex HTTPS 0 candle');
-      this.afterLoadData('HTTPS (Firefox) • '+this.symbol+' • Frankfurter + Live Rate');
-      // Polling harga live tiap 5 detik via HTTPS
-      this._pollTimer = setInterval(async()=>{
-        try{
-          let r = await fetch(`https://api.exchangerate.host/convert?from=${from}&to=${to}`);
-          let d = await r.json();
-          let price = d.result || d.info?.rate;
-          if(!price) return;
-          let last = this.allData[this.allData.length-1];
-          if(last){ last.close = price; last.high = Math.max(last.high, price); last.low = Math.min(last.low, price); this.candleSeries.update(last); this.updateTop(last); }
-        }catch(e){}
-      }, 5000);
-    }catch(e){
-      console.log('[HTTPS] Forex gagal:', e);
-      throw e;
-    }
-  },
-
-  async loadSyntheticHttps(derivSymbol, granularity){
-    // Synthetic cuma ada di Deriv, di Firefox kita coba WS dengan cara yang lebih kompatibel
-    // Firefox kadang nge-block WS kalo Enhanced Tracking Protection Strict, jadi kita kasih tau user cara matiinnya
-    // Sambil itu, kita coba lagi WS tapi dengan app_id yang beda + tanpa subscribe dulu
-    console.log('[HTTPS] Synthetic, coba WS lagi dengan cara Firefox-friendly');
-    document.getElementById('candleStatus').textContent='Synthetic cuma ada di Deriv, coba WS lagi...';
-    this.log('⚠️ Synthetic (V75, Boom, Crash) cuma ada di Deriv, harus pake WS. Coba matiin Tracking Protection di Firefox.');
-    this.log('💡 Cara: Klik 🛡️ di address bar Firefox -> Matikan Enhanced Tracking Protection -> Refresh');
-    // Coba lagi WS, tapi tunggu 1 detik
-    setTimeout(()=>{
-      this._useWS = true;
-      this.tryDerivEndpoint(['wss://ws.derivws.com/websockets/v3?app_id=1089'], 0, derivSymbol, granularity);
-    }, 1000);
-  },
-
-  splitDailyToIntraday(dailyData, interval){
-    let perDay = interval==='1m'?60:interval==='5m'?24:interval==='15m'?12:interval==='1h'?8:2;
-    let out=[];
-    dailyData.forEach(d=>{
-      let step = 86400/perDay;
-      let priceStep = (d.close - d.open)/perDay;
-      for(let i=0;i<perDay;i++){
-        let t = d.time + i*step;
-        let open = d.open + priceStep*i;
-        let close = d.open + priceStep*(i+1);
-        out.push({time:t, open, high:Math.max(open,close)*1.0002, low:Math.min(open,close)*0.9998, close, volume:100});
-      }
-    });
-    return out.slice(-300);
+    this._derivWs.onclose=()=>{
+      console.log('[Deriv] WS Closed endpoint', idx+1);
+    };
   },
 
   afterLoadData(sourceName){ this.candleSeries.setData(this.allData); document.getElementById('candleStatus').textContent='OK • '+sourceName+' • '+this.allData.length+' candle'; document.getElementById('barCount').textContent=this.allData.length; this.updateTop(this.allData[this.allData.length-1]); setTimeout(()=>{ this.redrawAllPines(); Drawing.load(); Drawing.render(); try{ this.pineChart.timeScale().fitContent(); }catch(e){} this.updatePaneVisibility(); }, 600); },
