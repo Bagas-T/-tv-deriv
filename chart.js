@@ -1,24 +1,15 @@
-// chart.js - SOLUSI 3 - WS DERIV + HTTPS FALLBACK - GITHUB PAGES + FIREFOX READY
-// Alur: 1) Coba WS Deriv (3 endpoint) -> kalo gagal semua, 2) Otomatis pindah ke HTTPS Fallback (Binance + ER-API)
-// Jadi walau Deriv ke-block ISP / Firefox, chart tetep muncul. NO FRANKFURTER, NO CORS ERROR.
+// chart.js - FINAL - WS DERIV + PROXY + HTTPS FALLBACK - GITHUB PAGES + FIREFOX + CHROME + VPN READY
+// Alur: 1) WS Deriv (4 endpoint incl Proxy) -> 2) Kalo gagal semua, auto ke HTTPS Fallback (Binance + ER-API)
+// NO FRANKFURTER, NO CORS ERROR. Synthetic (V75/BOOM) wajib WS + VPN, Forex/Crypto jalan via HTTPS juga.
 const DERIV_MAP = {
-  // FOREX MAJOR
   'EURUSD':'frxEURUSD','GBPUSD':'frxGBPUSD','USDJPY':'frxUSDJPY','AUDUSD':'frxAUDUSD','USDCAD':'frxUSDCAD','USDCHF':'frxUSDCHF','NZDUSD':'frxNZDUSD',
-  // FOREX MINOR
   'EURGBP':'frxEURGBP','EURJPY':'frxEURJPY','EURCHF':'frxEURCHF','EURCAD':'frxEURCAD','EURAUD':'frxEURAUD','EURNZD':'frxEURNZD','GBPJPY':'frxGBPJPY','GBPCHF':'frxGBPCHF','GBPCAD':'frxGBPCAD','GBPAUD':'frxGBPAUD','GBPNZD':'frxGBPNZD','AUDJPY':'frxAUDJPY','AUDCHF':'frxAUDCHF','AUDCAD':'frxAUDCAD','AUDNZD':'frxAUDNZD','CADJPY':'frxCADJPY','CADCHF':'frxCADCHF','CHFJPY':'frxCHFJPY','NZDJPY':'frxNZDJPY','NZDCHF':'frxNZDCHF','NZDCAD':'frxNZDCAD',
-  // FOREX EXOTIC
   'USDMXN':'frxUSDMXN','USDZAR':'frxUSDZAR','USDTRY':'frxUSDTRY','USDTHB':'frxUSDTHB','USDSGD':'frxUSDSGD','USDHKD':'frxUSDHKD','USDNOK':'frxUSDNOK','USDSEK':'frxUSDSEK','USDDKK':'frxUSDDKK','USDPLN':'frxUSDPLN','USDHUF':'frxUSDHUF','USDCZK':'frxUSDCZK','EURTRY':'frxEURTRY','EURZAR':'frxEURZAR','EURMXN':'frxEURMXN','GBPTRY':'frxGBPTRY',
-  // COMMODITIES
   'XAUUSD':'frxXAUUSD','XAGUSD':'frxXAGUSD','XPTUSD':'frxXPTUSD','XPDUSD':'frxXPDUSD','USOIL':'frxUSOIL','UKOIL':'frxUKOIL','NGAS':'frxNGAS',
-  // CRYPTO
   'BTCUSD':'cryBTCUSD','ETHUSD':'cryETHUSD','LTCUSD':'cryLTCUSD','BCHUSD':'cryBCHUSD','XRPUSD':'cryXRPUSD','ADAUSD':'cryADAUSD','SOLUSD':'crySOLUSD','DOTUSD':'cryDOTUSD','DOGEUSD':'cryDOGEUSD','AVAXUSD':'cryAVAXUSD','LINKUSD':'cryLINKUSD','MATICUSD':'cryMATICUSD','UNIUSD':'cryUNIUSD','ATOMUSD':'cryATOMUSD','NEARUSD':'cryNEARUSD','ALGOUSD':'cryALGOUSD',
-  // INDEX
   'US30':'frxUS30','US100':'frxUS100','US500':'frxUS500','UK100':'frxUK100','GER40':'frxGER40','FRA40':'frxFRA40','EU50':'frxEU50','JPN225':'frxJPN225','AUS200':'frxAUS200','HKG50':'frxHKG50',
-  // SYNTHETIC - Volatility
   'V10':'R_10','V25':'R_25','V50':'R_50','V75':'R_75','V100':'R_100','V150':'R_150','V200':'R_200','V250':'R_250',
-  // SYNTHETIC - Boom & Crash
   'BOOM1000':'BOOM1000','BOOM500':'BOOM500','BOOM300':'BOOM300','CRASH1000':'CRASH1000','CRASH500':'CRASH500','CRASH300':'CRASH300',
-  // SYNTHETIC - Lainnya
   'STEP':'stpRNG','JUMP10':'JD10','JUMP25':'JD25','JUMP50':'JD50','JUMP75':'JD75','JUMP100':'JD100','RANGE100':'RB100','RANGE200':'RB200',
 };
 
@@ -40,8 +31,6 @@ const App={
     document.getElementById('chart').addEventListener('wheel', e=>{ if(e.ctrlKey || e.metaKey){ e.preventDefault(); if(e.deltaY<0) this.zoomIn(); else this.zoomOut(); } }, {passive:false});
   },
   getDerivSymbol(symbol){ return DERIV_MAP[symbol] || 'frx'+symbol; },
-
-  // ===== LOAD REAL - WS DULU, KALO GAGAL -> HTTPS FALLBACK =====
   async loadReal(){
     if(this._derivWs){ try{ this._derivWs.close(); }catch(e){} this._derivWs=null; }
     if(this._autoTimer){ clearTimeout(this._autoTimer); }
@@ -60,10 +49,9 @@ const App={
     ];
     this.tryDerivEndpoint(endpoints, 0, derivSymbol, granularity);
   },
-
   tryDerivEndpoint(endpoints, idx, derivSymbol, granularity){
     if(idx >= endpoints.length){
-      console.log('[Deriv] Semua WS gagal, pindah ke HTTPS Fallback (ER-API + Binance) - Ini jalan walau Deriv ke-block ISP');
+      console.log('[Deriv] Semua WS gagal, pindah ke HTTPS Fallback (ER-API + Binance)');
       document.getElementById('candleStatus').textContent='WS Deriv ke-block ISP - Pindah ke HTTPS Fallback...';
       this.loadHttpsFallback();
       return;
@@ -121,32 +109,21 @@ const App={
     this._derivWs.onerror=(e)=>{
       console.log('[Deriv] WS Error endpoint', idx+1);
       clearTimeout(timeoutId);
-      if(!connected){
-        this.tryDerivEndpoint(endpoints, idx+1, derivSymbol, granularity);
-      }
+      if(!connected){ this.tryDerivEndpoint(endpoints, idx+1, derivSymbol, granularity); }
     };
-    this._derivWs.onclose=()=>{
-      console.log('[Deriv] WS Closed endpoint', idx+1);
-    };
+    this._derivWs.onclose=()=>{ console.log('[Deriv] WS Closed endpoint', idx+1); };
   },
-
-  // ===== HTTPS FALLBACK - SOLUSI 3 - JALAN WALAU DERIV KE-BLOCK ISP / FIREFOX =====
   async loadHttpsFallback(){
     try{
       let isCrypto = ['BTCUSD','ETHUSD','LTCUSD','BCHUSD','XRPUSD','ADAUSD','SOLUSD','DOTUSD','DOGEUSD','AVAXUSD','LINKUSD','MATICUSD','UNIUSD','ATOMUSD'].includes(this.symbol);
       let isGold = this.symbol==='XAUUSD' || this.symbol==='XAGUSD';
       let isSynthetic = this.symbol.startsWith('V') || this.symbol.startsWith('BOOM') || this.symbol.startsWith('CRASH') || this.symbol.startsWith('JUMP') || this.symbol.startsWith('STEP') || this.symbol.startsWith('RANGE');
-      let livePrice = null;
-      let history = [];
-
-      // SYNTHETIC GAK BISA HTTPS, HARUS WS - KASIH TAU USER HARUS PAKE VPN
+      let livePrice = null; let history = [];
       if(isSynthetic){
         document.getElementById('candleStatus').textContent='Synthetic (V75 / BOOM / CRASH) cuma bisa via WS Deriv - Wajib pake VPN Singapore / Data HP';
         this.log('❌ Synthetic '+this.symbol+' cuma bisa via WS Deriv. WS ke-block ISP, jadi harus pake VPN Singapore / Data HP, terus Refresh di Chrome.');
         return;
       }
-
-      // 1. CRYPTO -> BINANCE (paling akurat, realtime, gak ke-block)
       if(isCrypto){
         let binSym = this.symbol.replace('USD','USDT');
         let tf = this.interval==='1m'?'1m':this.interval==='5m'?'5m':this.interval==='15m'?'15m':this.interval==='1h'?'1h':this.interval==='4h'?'4h':'1d';
@@ -154,111 +131,62 @@ const App={
         try{
           let r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${binSym}&interval=${tf}&limit=200`);
           let d = await r.json();
-          if(Array.isArray(d) && d.length){
-            history = d.map(k=>({time:Math.floor(k[0]/1000), open:+k[1], high:+k[2], low:+k[3], close:+k[4], volume:+k[5]}));
-            livePrice = history[history.length-1]?.close;
-          }
+          if(Array.isArray(d) && d.length){ history = d.map(k=>({time:Math.floor(k[0]/1000), open:+k[1], high:+k[2], low:+k[3], close:+k[4], volume:+k[5]})); livePrice = history[history.length-1]?.close; }
         }catch(e){ console.log('[HTTPS] Binance gagal', e); }
         if(!history.length){
           try{
             let id = this.symbol==='BTCUSD'?'bitcoin':this.symbol==='ETHUSD'?'ethereum':this.symbol==='SOLUSD'?'solana':this.symbol==='DOGEUSD'?'dogecoin':this.symbol==='XRPUSD'?'ripple':'bitcoin';
             let r2 = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`);
-            let d2 = await r2.json();
-            livePrice = d2[id]?.usd;
+            let d2 = await r2.json(); livePrice = d2[id]?.usd;
           }catch(e){}
         }
       }
-
-      // 2. FOREX + GOLD -> ER-API + exchangerate.host (CORS bener, gak ke-block ISP)
       if(!isCrypto){
-        let from = this.symbol.slice(0,3);
-        let to = this.symbol.slice(3,6);
-        if(isGold){ from = 'USD'; to = 'USD'; }
-        // Buat GOLD, kita pake harga dari goldprice.org
         if(isGold){
           try{
             let rGold = await fetch(`https://data-asg.goldprice.org/dbXRates/USD`);
             let dGold = await rGold.json();
-            // data-asg return items[0].xauPrice & xagPrice
-            if(dGold && dGold.items && dGold.items[0]){
-              livePrice = this.symbol==='XAUUSD' ? dGold.items[0].xauPrice : dGold.items[0].xagPrice;
-              console.log('[HTTPS Fallback] Gold live:', livePrice);
-            }
+            if(dGold && dGold.items && dGold.items[0]){ livePrice = this.symbol==='XAUUSD' ? dGold.items[0].xauPrice : dGold.items[0].xagPrice; console.log('[HTTPS Fallback] Gold live:', livePrice); }
           }catch(e){ console.log('[HTTPS] Goldprice gagal', e); }
         }
         if(!livePrice && !isGold){
+          let from = this.symbol.slice(0,3); let to = this.symbol.slice(3,6);
           console.log('[HTTPS Fallback] Forex ER-API:', from, to);
-          try{
-            let r = await fetch(`https://open.er-api.com/v6/latest/${from}`);
-            let d = await r.json();
-            livePrice = d.rates?.[to];
-            console.log('[HTTPS Fallback] ER-API live:', from, to, livePrice);
-          }catch(e){ console.log('[HTTPS] ER-API gagal', e); }
+          try{ let r = await fetch(`https://open.er-api.com/v6/latest/${from}`); let d = await r.json(); livePrice = d.rates?.[to]; console.log('[HTTPS Fallback] ER-API live:', from, to, livePrice); }catch(e){ console.log('[HTTPS] ER-API gagal', e); }
         }
         if(!livePrice && !isGold){
-          try{
-            let r2 = await fetch(`https://api.exchangerate.host/convert?from=${from}&to=${to}`);
-            let d2 = await r2.json();
-            livePrice = d2.result || d2.info?.rate;
-            console.log('[HTTPS Fallback] exchangerate.host live:', livePrice);
-          }catch(e){ console.log('[HTTPS] exchangerate.host gagal', e); }
+          try{ let from = this.symbol.slice(0,3); let to = this.symbol.slice(3,6); let r2 = await fetch(`https://api.exchangerate.host/convert?from=${from}&to=${to}`); let d2 = await r2.json(); livePrice = d2.result || d2.info?.rate; console.log('[HTTPS Fallback] exchangerate.host live:', livePrice); }catch(e){}
         }
         if(!livePrice) throw new Error('ER-API juga gagal');
       }
-
-      // 3. Kalo dapet history dari Binance, pake itu langsung
-      if(history.length){
-        this.allData = history;
-        this.afterLoadData('HTTPS Fallback • Binance REAL • '+this.symbol);
-      } else {
+      if(history.length){ this.allData = history; this.afterLoadData('HTTPS Fallback • Binance REAL • '+this.symbol); }
+      else {
         if(!livePrice) throw new Error('Gak dapet harga sama sekali');
         let now = Math.floor(Date.now()/1000);
         let intervalSec = this.interval==='1m'?60:this.interval==='5m'?300:this.interval==='15m'?900:this.interval==='1h'?3600:this.interval==='4h'?14400:86400;
-        this.allData = [];
-        let cur = livePrice * 0.998;
-        for(let i=200;i>0;i--){
-          let t = now - i*intervalSec;
-          let open = cur;
-          let close = open + (Math.random()-0.5)*livePrice*0.0006;
-          this.allData.push({time:t, open, high:Math.max(open,close)*1.0003, low:Math.min(open,close)*0.9997, close, volume:100});
-          cur = close;
-        }
-        let last = this.allData[this.allData.length-1];
-        last.close = livePrice; last.high = Math.max(last.high, livePrice); last.low = Math.min(last.low, livePrice);
+        this.allData = []; let cur = livePrice * 0.998;
+        for(let i=200;i>0;i--){ let t = now - i*intervalSec; let open = cur; let close = open + (Math.random()-0.5)*livePrice*0.0006; this.allData.push({time:t, open, high:Math.max(open,close)*1.0003, low:Math.min(open,close)*0.9997, close, volume:100}); cur = close; }
+        let last = this.allData[this.allData.length-1]; last.close = livePrice; last.high = Math.max(last.high, livePrice); last.low = Math.min(last.low, livePrice);
         this.afterLoadData('HTTPS Fallback • ER-API Live • '+this.symbol+' • WS Deriv ke-block ISP');
       }
-
-      // 4. Polling tiap 5 detik biar harga jalan terus walau WS mati
       if(this._pollTimer) clearInterval(this._pollTimer);
       this._pollTimer = setInterval(async()=>{
         try{
           let price = null;
-          if(isCrypto){
-            let binSym = this.symbol.replace('USD','USDT');
-            let r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${binSym}`);
-            let d = await r.json(); price = +d.price;
-          } else if(isGold){
-            let r = await fetch(`https://data-asg.goldprice.org/dbXRates/USD`);
-            let d = await r.json();
-            price = this.symbol==='XAUUSD' ? d.items[0].xauPrice : d.items[0].xagPrice;
-          } else {
-            let from = this.symbol.slice(0,3); let to = this.symbol.slice(3,6);
-            let r = await fetch(`https://open.er-api.com/v6/latest/${from}`);
-            let d = await r.json(); price = d.rates?.[to];
-          }
+          if(isCrypto){ let binSym = this.symbol.replace('USD','USDT'); let r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${binSym}`); let d = await r.json(); price = +d.price; }
+          else if(isGold){ let r = await fetch(`https://data-asg.goldprice.org/dbXRates/USD`); let d = await r.json(); price = this.symbol==='XAUUSD' ? d.items[0].xauPrice : d.items[0].xagPrice; }
+          else { let from = this.symbol.slice(0,3); let to = this.symbol.slice(3,6); let r = await fetch(`https://open.er-api.com/v6/latest/${from}`); let d = await r.json(); price = d.rates?.[to]; }
           if(!price) return;
           let last2 = this.allData[this.allData.length-1];
           if(last2){ last2.close = price; last2.high = Math.max(last2.high, price); last2.low = Math.min(last2.low, price); this.candleSeries.update(last2); this.updateTop(last2); }
         }catch(e){}
       }, 5000);
-
     }catch(e){
       console.log('[HTTPS Fallback] Gagal juga:', e);
       document.getElementById('candleStatus').textContent='WS + HTTPS gagal semua - Wajib pake VPN / Data HP bro';
       this.log('❌ WS Deriv ke-block ISP + HTTPS juga gagal. Solusi: Pake VPN Singapore / Data HP, terus Refresh di Chrome');
     }
   },
-
   afterLoadData(sourceName){ this.candleSeries.setData(this.allData); document.getElementById('candleStatus').textContent='OK • '+sourceName+' • '+this.allData.length+' candle'; document.getElementById('barCount').textContent=this.allData.length; this.updateTop(this.allData[this.allData.length-1]); setTimeout(()=>{ this.redrawAllPines(); Drawing.load(); Drawing.render(); try{ this.pineChart.timeScale().fitContent(); }catch(e){} this.updatePaneVisibility(); }, 600); },
   updateTop(c){ if(!c) return; let dec=c.close<10?5:c.close<1000?4:2; document.getElementById('topPrice').textContent=c.close.toLocaleString('en-US',{minimumFractionDigits:dec, maximumFractionDigits:dec}); document.getElementById('oV').textContent=c.open.toFixed(dec); document.getElementById('hV').textContent=c.high.toFixed(dec); document.getElementById('lV').textContent=c.low.toFixed(dec); document.getElementById('cV').textContent=c.close.toFixed(dec); },
   changeSymbol(v){ console.log('[App] Ganti:', this.symbol, '->', v); this.symbol=v; this.allData=[]; try{ this.candleSeries.setData([]); }catch(e){} this.loadReal(); },
